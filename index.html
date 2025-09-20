@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bloc de guiones para cómic (offline)</title>
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --panel:#111827;       /* gray-900 */
+      --card:#111827;
+      --muted:#94a3b8;      /* slate-400 */
+      --text:#e5e7eb;        /* gray-200 */
+      --accent:#38bdf8;      /* sky-400 */
+      --accent-2:#22c55e;    /* green-500 */
+      --accent-3:#f59e0b;    /* amber-500 */
+      --danger:#ef4444;      /* red-500 */
+      --soft:#1f2937;        /* gray-800 */
+      --border:#334155;      /* slate-700 */
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background:linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+      color:var(--text);
+    }
+    .app{display:grid; grid-template-columns: 280px 1fr; height:100vh;}
+    .sidebar{background:var(--panel); border-right:1px solid var(--border); padding:16px; overflow:auto}
+    .main{display:flex; flex-direction:column; height:100vh;}
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap; padding:12px; border-bottom:1px solid var(--border); background:rgba(17,24,39,.6); backdrop-filter: blur(6px); position:sticky; top:0; z-index:5}
+    .content{flex:1; overflow:auto; padding:16px;}
+    .footer{border-top:1px solid var(--border); padding:8px 12px; font-size:12px; color:var(--muted);}
+
+    h1{font-size:18px; margin:0 0 12px;}
+    h2{font-size:14px; margin:16px 0 8px; color:var(--muted); font-weight:600}
+    label{font-size:12px; color:var(--muted)}
+
+    .input, textarea, select{
+      background:var(--soft); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px; outline:none;
+    }
+    .input:focus, textarea:focus{border-color:var(--accent)}
+    textarea{width:100%; min-height:60px; resize:vertical; line-height:1.5;}
+
+    .btn{cursor:pointer; background:#0b1220; color:var(--text); border:1px solid var(--border); padding:8px 10px; border-radius:12px; font-weight:600; font-size:12px; transition:transform .03s ease, border-color .2s}
+    .btn:hover{border-color:var(--accent)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:linear-gradient(135deg, #0ea5e9, #22c55e); border:none}
+    .btn.warn{border-color:var(--accent-3)}
+    .btn.ghost{background:transparent}
+
+    .row{display:flex; gap:8px; align-items:center}
+    .col{display:flex; flex-direction:column; gap:6px}
+    .stack{display:flex; flex-direction:column; gap:12px}
+
+    .panel-card{background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow:0 0 0 1px rgba(255,255,255,.02) inset}
+    .panel-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:8px; margin-bottom:10px; border-bottom:1px dashed var(--border)}
+    .chip{font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted)}
+
+    .block{background:rgba(15,23,42,.6); border:1px solid var(--border); border-radius:12px; padding:10px; display:grid; grid-template-columns: 120px 1fr; gap:10px; align-items:start}
+    .block + .block{margin-top:8px}
+    .kind{font-size:12px; display:flex; gap:6px; align-items:center}
+    .pill{padding:2px 8px; border-radius:999px; font-weight:700; font-size:11px;}
+    .pill.dialogo{background:#0ea5e9; color:#041015}
+    .pill.narra{background:#f59e0b; color:#1a1202}
+    .pill.sfx{background:#22c55e; color:#04120a}
+
+    .block-tools{display:flex; gap:6px; flex-wrap:wrap}
+    .mini{font-size:11px; padding:4px 6px; border-radius:8px}
+
+    .list{display:flex; flex-direction:column; gap:12px}
+    .hint{font-size:11px; color:var(--muted)}
+
+    .grid-2{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
+    .hr{height:1px; background:linear-gradient(90deg, transparent, var(--border), transparent); margin:8px 0}
+
+    .badge{font-size:10px; color:var(--muted)}
+    .kbd{border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; padding:1px 6px; font-size:11px; color:var(--muted)}
+
+    .ghost-input{background:transparent; border:none; border-bottom:1px dashed var(--border); color:var(--text); outline:none; padding:2px 4px; font-size:14px;}
+
+    .sticky-right{position:sticky; top:0; align-self:start}
+
+    .title{
+      font-weight:800; letter-spacing:.3px; background:linear-gradient(90deg, #a5b4fc, #38bdf8, #22c55e); -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1 class="title">Bloc de guiones</h1>
+      <div class="stack">
+        <div class="col">
+          <label>Título / Proyecto</label>
+          <input id="projectName" class="input" placeholder="Mi cómic one-shot" />
+        </div>
+        <div class="col">
+          <label>Notas generales</label>
+          <textarea id="notes" placeholder="Premisa, tono, personajes, recordatorios…"></textarea>
+        </div>
+        <div class="hr"></div>
+        <div class="col">
+          <label>Gestión</label>
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn mini" id="newPanelBtn">+ Panel (<span class="kbd">Alt</span>+<span class="kbd">P</span>)</button>
+            <button class="btn mini" id="newDialogBtn">+ Diálogo (<span class="kbd">Ctrl</span>+<span class="kbd">Enter</span>)</button>
+            <button class="btn mini" id="newNarrBtn">+ Narración (<span class="kbd">Alt</span>+<span class="kbd">N</span>)</button>
+            <button class="btn mini" id="newSfxBtn">+ SFX (<span class="kbd">Alt</span>+<span class="kbd">S</span>)</button>
+            <button class="btn mini warn" id="clearBtn">Vaciar</button>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="col">
+          <label>Archivo</label>
+          <div class="row" style="flex-wrap:wrap">
+            <button class="btn mini" id="copyTextBtn">Copiar texto</button>
+            <button class="btn mini" id="downloadTxtBtn">Descargar .txt</button>
+            <button class="btn mini" id="exportJsonBtn">Exportar .json</button>
+            <button class="btn mini" id="runTestsBtn" title="Ejecuta pruebas en consola">Probar (tests)</button>
+            <label class="btn mini ghost" for="importJson">Importar .json</label>
+            <input id="importJson" type="file" accept="application/json" style="display:none" />
+          </div>
+          <span class="hint">Autosave en este navegador. Funciona 100% offline.</span>
+        </div>
+        <div class="hr"></div>
+        <div class="col">
+          <label>Atajos</label>
+          <ul class="hint" style="margin:6px 0 0 16px; line-height:1.6">
+            <li><b>Ctrl+Enter</b>: nuevo diálogo</li>
+            <li><b>Alt+P</b>: nuevo panel</li>
+            <li><b>Alt+N</b>: narración</li>
+            <li><b>Alt+S</b>: SFX</li>
+            <li><b>Tab</b> dentro de diálogo: va al texto</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="toolbar">
+        <button class="btn primary" id="quickPanel">+ Panel</button>
+        <button class="btn" id="quickDialog">+ Diálogo</button>
+        <button class="btn" id="quickNarr">+ Narración</button>
+        <button class="btn" id="quickSfx">+ SFX</button>
+        <div style="flex:1"></div>
+        <input id="search" class="input" placeholder="Buscar (personaje o texto)…" style="min-width:240px" />
+      </div>
+
+      <div class="content" id="board"></div>
+
+      <div class="footer">
+        Hecho para escribir guiones rápidos y limpios para cómic. Consejos: separa por paneles y mantén cada globo en una línea distinta. – <span class="badge">v1.1</span>
+      </div>
+    </section>
+  </div>
+
+  <template id="panelTemplate">
+    <div class="panel-card" data-type="panel">
+      <div class="panel-head">
+        <div class="row">
+          <span class="chip">Panel <span class="panel-num"></span></span>
+          <input class="ghost-input panel-title" placeholder="Descripción corta del panel (opcional)" />
+        </div>
+        <div class="row">
+          <button class="btn mini" data-act="addDialog">+ Diálogo</button>
+          <button class="btn mini" data-act="addNarr">+ Narración</button>
+          <button class="btn mini" data-act="addSfx">+ SFX</button>
+          <button class="btn mini" data-act="dupPanel">Duplicar</button>
+          <button class="btn mini" data-act="moveUp">↑</button>
+          <button class="btn mini" data-act="moveDown">↓</button>
+          <button class="btn mini" data-act="delete">Eliminar</button>
+        </div>
+      </div>
+      <div class="list items"></div>
+    </div>
+  </template>
+
+  <template id="itemTemplate">
+    <div class="block" data-type="item">
+      <div class="col">
+        <div class="kind">
+          <span class="pill dialogo">DIÁLOGO</span>
+        </div>
+        <input class="input speaker" placeholder="Personaje (opcional)" />
+        <div class="block-tools">
+          <button class="btn mini" data-act="split">Dividir por líneas</button>
+          <button class="btn mini" data-act="dup">Duplicar</button>
+          <button class="btn mini" data-act="up">↑</button>
+          <button class="btn mini" data-act="down">↓</button>
+          <button class="btn mini" data-act="del">Eliminar</button>
+        </div>
+      </div>
+      <div class="col">
+        <textarea class="text" placeholder="Escribe el diálogo, narración o SFX…"></textarea>
+        <div class="row" style="justify-content:space-between">
+          <div class="row" style="gap:6px">
+            <select class="input kind-select" style="padding-right:28px">
+              <option value="dialogo">Diálogo</option>
+              <option value="narracion">Narración</option>
+              <option value="sfx">SFX</option>
+            </select>
+            <span class="hint count">0 caracteres</span>
+          </div>
+          <label class="hint"><input type="checkbox" class="caps" /> MAYÚS (estilo cómic)</label>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // --- Estado y utilidades ---
+    const board = document.getElementById('board');
+    const panelTpl = document.getElementById('panelTemplate');
+    const itemTpl = document.getElementById('itemTemplate');
+
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+
+    const state = {
+      projectName: '',
+      notes: '',
+      panels: [] // [{title:'', items:[{kind:'dialogo'|'narracion'|'sfx', speaker:'', text:'', caps:false}]}]
+    };
+
+    // --- Persistencia ---
+    const STORAGE_KEY = 'comic_script_v1';
+    function save(){
+      state.projectName = $('#projectName').value.trim();
+      state.notes = $('#notes').value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    function load(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      try{
+        const data = JSON.parse(raw);
+        if(data && data.panels){
+          state.projectName = data.projectName||'';
+          state.notes = data.notes||'';
+          state.panels = data.panels||[];
+          $('#projectName').value = state.projectName;
+          $('#notes').value = state.notes;
+          renderAll();
+        }
+      }catch(e){ console.warn('No se pudo cargar', e); }
+    }
+
+    // --- Render ---
+    function renderAll(){
+      board.innerHTML = '';
+      state.panels.forEach((p, idx)=>{
+        const node = renderPanel(p, idx);
+        board.appendChild(node);
+      });
+      renumberPanels();
+      save();
+    }
+
+    function renderPanel(panel, index){
+      const n = panelTpl.content.firstElementChild.cloneNode(true);
+      n.dataset.index = index;
+      $('.panel-title', n).value = panel.title||'';
+      const list = $('.items', n);
+      (panel.items||[]).forEach((it, i)=> list.appendChild(renderItem(it, index, i)));
+      n.addEventListener('input', (e)=>{
+        if(e.target.classList.contains('panel-title')){
+          state.panels[index].title = e.target.value; save();
+        }
+      });
+      n.addEventListener('click', (e)=> handlePanelAction(e, index));
+      return n;
+    }
+
+    function renderItem(item, pIndex, iIndex){
+      const n = itemTpl.content.firstElementChild.cloneNode(true);
+      n.dataset.pIndex = pIndex; n.dataset.iIndex = iIndex;
+      const pill = $('.pill', n);
+      const kindSel = $('.kind-select', n);
+      const speaker = $('.speaker', n);
+      const text = $('.text', n);
+      const caps = $('.caps', n);
+      const count = $('.count', n);
+
+      function applyKind(k){
+        kindSel.value = k;
+        pill.className = 'pill ' + (k==='narracion'? 'narra' : (k==='sfx'? 'sfx':'dialogo'));
+        pill.textContent = (k==='narracion'? 'NARRACIÓN' : (k==='sfx'? 'SFX':'DIÁLOGO'));
+      }
+      applyKind(item.kind||'dialogo');
+      speaker.value = item.speaker||'';
+      text.value = item.text||'';
+      caps.checked = !!item.caps;
+      updateCount();
+
+      text.addEventListener('input', ()=>{ state.panels[pIndex].items[iIndex].text = caps.checked? text.value.toUpperCase(): text.value; updateCount(); save(); autosize(text); });
+      speaker.addEventListener('input', ()=>{ state.panels[pIndex].items[iIndex].speaker = speaker.value; save();});
+      kindSel.addEventListener('change', ()=>{ state.panels[pIndex].items[iIndex].kind = kindSel.value; applyKind(kindSel.value); save();});
+      caps.addEventListener('change', ()=>{
+        state.panels[pIndex].items[iIndex].caps = caps.checked;
+        if(caps.checked){ text.value = text.value.toUpperCase(); }
+        save(); updateCount();
+      });
+
+      n.addEventListener('click', (e)=> handleItemAction(e, pIndex, iIndex, n));
+      setTimeout(()=> autosize(text), 0);
+
+      function updateCount(){ count.textContent = (text.value||'').length + ' caracteres'; }
+      return n;
+    }
+
+    function autosize(ta){ ta.style.height='auto'; ta.style.height = (ta.scrollHeight+4)+ 'px'; }
+
+    function renumberPanels(){
+      $$('.panel-card').forEach((p,i)=>{ $('.panel-num', p).textContent = (i+1); });
+    }
+
+    // --- Acciones Panel ---
+    function handlePanelAction(e, index){
+      const act = e.target && e.target.dataset ? e.target.dataset.act : null; if(!act) return;
+      if(act==='addDialog') return addItem(index, {kind:'dialogo', speaker:'', text:'', caps:false});
+      if(act==='addNarr') return addItem(index, {kind:'narracion', speaker:'', text:'', caps:false});
+      if(act==='addSfx') return addItem(index, {kind:'sfx', speaker:'', text:'', caps:false});
+      if(act==='dupPanel'){
+        state.panels.splice(index+1,0, JSON.parse(JSON.stringify(state.panels[index])));
+        renderAll(); return;
+      }
+      if(act==='moveUp' && index>0){
+        const [p] = state.panels.splice(index,1); state.panels.splice(index-1,0,p); renderAll(); return;
+      }
+      if(act==='moveDown' && index<state.panels.length-1){
+        const [p] = state.panels.splice(index,1); state.panels.splice(index+1,0,p); renderAll(); return;
+      }
+      if(act==='delete'){
+        if(confirm('¿Eliminar este panel y sus elementos?')){ state.panels.splice(index,1); renderAll(); }
+      }
+    }
+
+    // --- Acciones Ítem ---
+    function handleItemAction(e, pIndex, iIndex, node){
+      const act = e.target && e.target.dataset ? e.target.dataset.act : null; if(!act) return;
+      if(act==='split'){
+        const text = $('.text', node).value;
+        const lines = text.split(/\r?\n|\|/).map(s=>s.trim()).filter(Boolean);
+        if(lines.length<=1) return;
+        // Reemplaza item actual por múltiples diálogos
+        const base = state.panels[pIndex].items[iIndex];
+        const newItems = lines.map(t=> ({kind: base.kind, speaker: base.speaker, text: base.caps? t.toUpperCase(): t, caps: base.caps}));
+        state.panels[pIndex].items.splice(iIndex, 1, ...newItems);
+        renderAll();
+      }
+      if(act==='dup'){
+        const it = JSON.parse(JSON.stringify(state.panels[pIndex].items[iIndex]));
+        state.panels[pIndex].items.splice(iIndex+1,0,it); renderAll();
+      }
+      if(act==='up' && iIndex>0){
+        const arr = state.panels[pIndex].items; const [it]=arr.splice(iIndex,1); arr.splice(iIndex-1,0,it); renderAll();
+      }
+      if(act==='down'){
+        const arr = state.panels[pIndex].items; if(iIndex<arr.length-1){ const [it]=arr.splice(iIndex,1); arr.splice(iIndex+1,0,it); renderAll(); }
+      }
+      if(act==='del'){
+        state.panels[pIndex].items.splice(iIndex,1); renderAll();
+      }
+    }
+
+    function addPanel(){ state.panels.push({title:'', items:[]}); renderAll(); focusLastPanel(); }
+    function addItem(panelIndex, item){
+      if(state.panels.length===0) addPanel();
+      state.panels[panelIndex].items.push(item); renderAll();
+      // Focus al último textarea
+      const card = $$('.panel-card')[panelIndex];
+      const lastTA = $$('.text', card).pop(); if(lastTA){ lastTA.focus(); lastTA.select(); }
+    }
+
+    function focusLastPanel(){ const last = $$('.panel-card').pop(); if(last) $('.panel-title', last).focus(); }
+
+    // --- Búsqueda simple ---
+    $('#search').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase();
+      $$('.panel-card').forEach(card=>{
+        const idx = parseInt(card.dataset.index,10);
+        const panel = state.panels[idx];
+        const hay = (panel.title||'').toLowerCase().includes(q) || (panel.items||[]).some(it=> (it.speaker||'').toLowerCase().includes(q) || (it.text||'').toLowerCase().includes(q));
+        card.style.opacity = hay? '1':'0.35';
+        card.style.filter = hay? 'none':'grayscale(0.8)';
+      });
+    });
+
+    // --- Exportación a texto ---
+    function exportDialogsText(panels){
+      // Solo diálogos, cada uno separado por una línea en blanco
+      const lines = [];
+      (panels||[]).forEach(p=>{
+        (p.items||[]).forEach(it=>{
+          if(it.kind==='dialogo'){
+            const t = (it.text||'').trim();
+            if(t){ lines.push(t, ''); }
+          }
+        });
+      });
+      let out = lines.join('\n');
+      out = out.replace(/\n+$/, '\n'); // un solo salto al final
+      return out;
+    }
+    function toPlainText(){ return exportDialogsText(state.panels); }
+
+    function copyText(){
+      const text = toPlainText();
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(()=> flashMsg('¡Copiado al portapapeles!')).catch(fallbackCopy);
+      } else { fallbackCopy(); }
+      function fallbackCopy(){
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        flashMsg('¡Copiado!');
+      }
+    }
+    function downloadTxt(){ downloadFile((state.projectName||'guion') + '.txt', toPlainText()); }
+    function exportJson(){ downloadFile((state.projectName||'guion') + '.json', JSON.stringify(state, null, 2)); }
+    function downloadFile(name, content){
+      const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(()=> URL.revokeObjectURL(a.href), 5000);
+    }
+
+    // --- Importar ---
+    $('#importJson').addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0] ? e.target.files[0] : null; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          if(data && data.panels){
+            state.projectName = data.projectName||'';
+            state.notes = data.notes||'';
+            state.panels = data.panels||[];
+            $('#projectName').value = state.projectName; $('#notes').value = state.notes;
+            renderAll(); flashMsg('Proyecto importado.');
+          } else { throw new Error('Formato no válido'); }
+        }catch(err){ alert('No se pudo importar: ' + err.message); }
+      };
+      reader.readAsText(file);
+      e.target.value='';
+    });
+
+    // --- UI helpers ---
+    function flashMsg(msg){
+      const div = document.createElement('div');
+      div.textContent = msg;
+      div.style.position='fixed'; div.style.bottom='16px'; div.style.right='16px';
+      div.style.background='rgba(30,58,138,.95)'; div.style.border='1px solid var(--border)'; div.style.padding='10px 12px'; div.style.borderRadius='10px'; div.style.boxShadow='0 10px 30px rgba(0,0,0,.3)';
+      document.body.appendChild(div); setTimeout(()=> div.remove(), 1600);
+    }
+
+    // --- Botones rápidos ---
+    $('#newPanelBtn').onclick = addPanel;
+    $('#quickPanel').onclick = addPanel;
+    $('#newDialogBtn').onclick = ()=> addItem(state.panels.length? state.panels.length-1: 0, {kind:'dialogo', speaker:'', text:'', caps:false});
+    $('#quickDialog').onclick = ()=> $('#newDialogBtn').onclick();
+    $('#newNarrBtn').onclick = ()=> addItem(state.panels.length? state.panels.length-1: 0, {kind:'narracion', speaker:'', text:'', caps:false});
+    $('#quickNarr').onclick = ()=> $('#newNarrBtn').onclick();
+    $('#newSfxBtn').onclick = ()=> addItem(state.panels.length? state.panels.length-1: 0, {kind:'sfx', speaker:'', text:'', caps:false});
+    $('#quickSfx').onclick = ()=> $('#newSfxBtn').onclick();
+
+    $('#copyTextBtn').onclick = copyText;
+    $('#downloadTxtBtn').onclick = downloadTxt;
+    $('#exportJsonBtn').onclick = exportJson;
+    $('#runTestsBtn').onclick = runTests;
+
+    $('#clearBtn').onclick = ()=>{
+      if(confirm('Esto vaciará el guion actual. ¿Continuar?')){
+        state.panels = []; renderAll(); save();
+      }
+    };
+
+    // --- Inputs generales ---
+    $('#projectName').addEventListener('input', save);
+    $('#notes').addEventListener('input', save);
+
+    // --- Teclado ---
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){
+        e.preventDefault();
+        $('#newDialogBtn').click();
+      }
+      if(e.altKey && e.key.toLowerCase()==='p'){ e.preventDefault(); addPanel(); }
+      if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); $('#newNarrBtn').click(); }
+      if(e.altKey && e.key.toLowerCase()==='s'){ e.preventDefault(); $('#newSfxBtn').click(); }
+    });
+
+    // --- Tests (mínimos) ---
+    function runTests(){
+      // Prueba 1: exporta solo diálogos con línea en blanco intermedia
+      const mock = [
+        { items: [ {kind:'dialogo', text:'A'}, {kind:'narracion', text:'X'}, {kind:'dialogo', text:'B'} ] }
+      ];
+      const out = exportDialogsText(mock);
+      const expected = 'A\n\nB\n';
+      console.assert(out === expected, 'toPlainText: diálogos con separación por línea en blanco', {out, expected});
+
+      // Prueba 2: ignora vacíos y recorta
+      const mock2 = [ { items:[ {kind:'dialogo', text:'  C  '}, {kind:'dialogo', text:'   '}, {kind:'sfx', text:'BOOM'} ] } ];
+      const out2 = exportDialogsText(mock2);
+      const expected2 = 'C\n\n';
+      console.assert(out2 === expected2, 'toPlainText: ignora vacíos', {out2, expected2});
+
+      flashMsg('Pruebas ejecutadas: mira la consola');
+    }
+
+    // --- Primera carga ---
+    window.addEventListener('load', ()=>{
+      load();
+      if(state.panels.length===0){ addPanel(); addItem(0,{kind:'dialogo', speaker:'Prota', text:'Hola, mundo.', caps:false}); }
+    });
+  </script>
+</body>
+</html>
